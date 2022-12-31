@@ -19,11 +19,11 @@ use Carbon\Carbon;
 class LoanController extends AppBaseController
 {
     /**
-     * get all loan
+     * get all loans
      */
     public function list()
     {
-        $loans = Loan::get();
+        $loans = Loan::all();
         $response['loans'] = LoanResource::collection($loans);
         return $this->sendResponse($response, 'Loans are retrieved successfully');
     }
@@ -34,10 +34,14 @@ class LoanController extends AppBaseController
     public function approveLoan($loan_id)
     {
         $loan  = Loan::find($loan_id);
-        $loan->status = 'APPROVED';
-        $loan->save();
+        if ($loan) {
+            $loan->status = 'APPROVED';
+            $loan->save();
 
-        $response['loan'] = new LoanResource($loan);
-        return $this->sendResponse($response, 'Loan approved successfull');
+            $response['loan'] = new LoanResource($loan);
+            return $this->sendResponse($response, 'Loan approved successfull');
+        } else {
+            return $this->sendError("Loan doesn't exist.", []);
+        }
     }
 }

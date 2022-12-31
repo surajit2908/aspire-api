@@ -20,7 +20,7 @@ class LoanController extends AppBaseController
 {
 
     /**
-     * add new loans
+     * add new loan
      */
     public function add(Request $request)
     {
@@ -78,7 +78,7 @@ class LoanController extends AppBaseController
     }
 
     /**
-     * get customer's all loan
+     * get customer's all loans
      */
     public function list()
     {
@@ -100,20 +100,88 @@ class LoanController extends AppBaseController
             return $this->sendError('Validation Error.', $validator->errors(), 400);
         } else {
             $loanRepayment = LoanRepayment::find($loan_repayment_id);
-            if ($loanRepayment->loan->status === 'APPROVED') {
 
-                if ($loanRepayment->payment_status === 'NOT_PAID') {
-                    if ($loanRepayment->amount === $request->input('amount')) {
-                        $loanRepayment->payment_status = 'PAID';
-                        $loanRepayment->save();
-                    } elseif ($loanRepayment->amount === $request->input('amount')) {
+            // Check if the loan repayment exists
+            if (!$loanRepayment) {
+                return $this->sendError("Loan repayment doesn't exist.", []);
+            }
+            // Check if the loan belongs to the current user
+            if ($loanRepayment->getLaon->user_id !== Auth::id()) {
+                return $this->sendError("Wrong loan repayment user.", []);
+            }
+            // Check if the loan is approved
+            if ($loanRepayment->getLaon->status !== 'APPROVED') {
+                return $this->sendError('Loan is not approved.', []);
+            }
+            // Check if the loan repayment already paid
+            if ($loanRepayment->payment_status !== 'NOT_PAID') {
+                return $this->sendError('Loan repayment is already paid.', []);
+            }
+
+            $customer_amount = $request->input('amount');
+            $repayment_amount = $loanRepayment->amount;
+            $loan_id = $loanRepayment->loan_id;
+
+            // Loan repayment with different amount coditions
+            if ($customer_amount === $repayment_amount) {
+
+                // If loan repayment amount is equal to scheduled repayment amount, Update repayment status to PAID
+                $loanRepayment->payment_status = 'PAID';
+                $loanRepayment->save();
+            } elseif ($customer_amount > $repayment_amount) {
+
+                // Update repayment status to PAID
+                $loanRepayment->payment_status = 'PAID';
+                $loanRepayment->save();
+
+                // If loan repayment amount is greater than scheduled repayment amount
+                $is_extra_amount = true;
+                $extra_amount = $customer_amount - $repayment_amount;
+
+                while ($is_extra_amount) {
+                    // Get customer last not paid scheduled repayment
+                    $lastLoanRepayment = LoanRepayment::where([
+                        'loan_id' => $loan_id,
+                        'payment_status' => 'NOT_PAID'
+                    ])->orderByDesc('id')->first();
+
+                    if ($lastLoanRepayment) {
+                        if ($lastLoanRepayment->amount === $extra_amount) {
+                            $lastLoanRepayment->payment_status = 'PAID';
+                            $lastLoanRepayment->save();
+                            $is_extra_amount = false;
+                        } elseif ($lastLoanRepayment->amount > $extra_amount) {
+
+                            // calculate remaining last repayment amount
+                            $remain_repayment_amount = $lastLoanRepayment->amount - $extra_amount;
+
+                            // checking is extra payment done before
+                            if ($lastLoanRepayment->remarks) {
+                                $remarks = explode('$', $lastLoanRepayment->remarks)[0];
+                                $paid_amount = sprintf("%.3f", $remarks) + $extra_amount;
+                            }
+
+                            // saving amount
+                            $lastLoanRepayment->amount = $remain_repayment_amount;
+                            $lastLoanRepayment->remarks = ($lastLoanRepayment->remarks ? $paid_amount : $extra_amount) . "$ is PAID. Date " . date('Y-m-d');
+                            $lastLoanRepayment->save();
+                            $is_extra_amount = false;
+                        } else {
+                            $lastLoanRepayment->payment_status = 'PAID';
+                            $lastLoanRepayment->save();
+                            $extra_amount = $extra_amount - $lastLoanRepayment->amount;
+                        }
                     } else {
+                        if ($extra_amount)
+                            return $this->sendError("Customer doesn't have any other repayments.{$extra_amount}$ is remaining extra amount. ", []);
+                        else
+                            return $this->sendError("Customer doesn't have any other repayments.", []);
                     }
-                } else {
-                    return $this->sendError('Loan repayment is already paid.', []);
                 }
             } else {
-                return $this->sendError('Loan is not approved.', []);
+
+                // If loan repayment amount is less than scheduled repayment amount
+                return $this->sendError('Loan repayment amount must greater or equal to the scheduled repayment.', []);
             }
 
             $response['loan'] = new LoanRepaymentResource($loanRepayment);

@@ -12,11 +12,12 @@ class LoanRepayment extends Model
         'loan_id',
         'amount',
         'repayment_date',
+        'remarks',
         'payment_status',
     ];
 
-    public function laon()
+    public function getLaon()
     {
-        return $this->belongsTo(Loan::class, "id", "loan_id");
+        return $this->belongsTo(Loan::class, "loan_id", "id");
     }
 }

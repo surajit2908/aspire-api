@@ -20,6 +20,7 @@ class LoanRepaymentResource extends JsonResource
             'id' => $this->id,
             'amount' => $this->amount,
             'repayment_date' => $this->repayment_date,
+            'remarks' => $this->remarks,
             'payment_status' => $this->payment_status,
         ];
     }

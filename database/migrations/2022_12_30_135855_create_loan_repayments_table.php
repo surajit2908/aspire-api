@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreign('loan_id')->references('id')->on('loans')->onDelete('cascade');
             $table->double('amount', 8, 3)->default(0.00);
             $table->date('repayment_date');
+            $table->text('remarks')->nullable();
             $table->enum('payment_status', ['NOT_PAID', 'PAID'])->default('NOT_PAID');
             $table->timestamps();
         });
