@@ -16,6 +16,7 @@ class LoanRepayment extends Model
         'payment_status',
     ];
 
+    // get loan details
     public function getLaon()
     {
         return $this->belongsTo(Loan::class, "loan_id", "id");

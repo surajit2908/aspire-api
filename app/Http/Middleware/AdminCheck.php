@@ -16,7 +16,7 @@ class AdminCheck
      */
     public function handle(Request $request, Closure $next)
     {
-        if (auth()->user()->user_type === 'admin') {
+        if (auth()->user()->user_type == 'admin') {
             return $next($request);
         }
 

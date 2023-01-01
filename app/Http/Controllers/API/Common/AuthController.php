@@ -41,8 +41,13 @@ class AuthController extends AppBaseController
                 $user->user_type = 'customer';
                 $user->save();
 
-                $response = [];
-                return $this->sendResponse($response, 'Customer registered successfully');
+                // Generate Token For Auth
+                $token = $user->createToken(env("APP_NAME", "Laravel Project"))->accessToken;
+
+                // Creating array For Login Result
+                $response['token'] = $token;
+                $response['user'] = new UserResource($user);
+                return $this->sendResponse($response, 'Customer registered & logged in successfully');
             } catch (\Exception $e) {
                 DB::rollback();
                 return $this->sendError('Registration Error.', $e->getMessage(), 500);

@@ -47,6 +47,7 @@ class LoanController extends AppBaseController
                 $repayment_amount = sprintf("%.3f", $request->input('amount') / $request->input('term'));
                 $repayment_sum = 0.000;
 
+                // Create loan repayments
                 for ($i = 1; $i <= $request->input('term'); $i++) {
                     $days = $i * 7;
                     $repaymentDateTime = Carbon::now()->addDays($days);
@@ -118,18 +119,20 @@ class LoanController extends AppBaseController
                 return $this->sendError('Loan repayment is already paid.', []);
             }
 
-            $customer_amount = $request->input('amount');
+            // Define all data variables
+            $customer_amount = sprintf("%.3f", $request->input('amount'));
             $repayment_amount = $loanRepayment->amount;
             $loan_id = $loanRepayment->loan_id;
+            $loan = Loan::find($loan_id);
+            // Success response Loan Repayment Resource
+            $response['loan_repayment'] = new LoanRepaymentResource($loanRepayment);
 
             // Loan repayment with different amount coditions
-            if ($customer_amount === $repayment_amount) {
-
+            if ($customer_amount == $repayment_amount) {
                 // If loan repayment amount is equal to scheduled repayment amount, Update repayment status to PAID
                 $loanRepayment->payment_status = 'PAID';
                 $loanRepayment->save();
             } elseif ($customer_amount > $repayment_amount) {
-
                 // Update repayment status to PAID
                 $loanRepayment->payment_status = 'PAID';
                 $loanRepayment->save();
@@ -146,7 +149,7 @@ class LoanController extends AppBaseController
                     ])->orderByDesc('id')->first();
 
                     if ($lastLoanRepayment) {
-                        if ($lastLoanRepayment->amount === $extra_amount) {
+                        if ($lastLoanRepayment->amount == $extra_amount) {
                             $lastLoanRepayment->payment_status = 'PAID';
                             $lastLoanRepayment->save();
                             $is_extra_amount = false;
@@ -172,20 +175,26 @@ class LoanController extends AppBaseController
                             $extra_amount = $extra_amount - $lastLoanRepayment->amount;
                         }
                     } else {
+                        // If All loan repayments are PAID, then Loan payment_status update to PAID
+                        if (!$loan->getRemainLoanRepayment->count()) {
+                            $loan->payment_status = "PAID";
+                            $loan->save();
+                        }
                         if ($extra_amount)
-                            return $this->sendError("Customer doesn't have any other repayments.{$extra_amount}$ is remaining extra amount. ", []);
-                        else
-                            return $this->sendError("Customer doesn't have any other repayments.", []);
+                            return $this->sendResponse($response, "Customer loan repayment successfull. Customer doesn't have any other repayments.{$extra_amount}$ is remaining extra amount.");
                     }
                 }
             } else {
-
                 // If loan repayment amount is less than scheduled repayment amount
                 return $this->sendError('Loan repayment amount must greater or equal to the scheduled repayment.', []);
             }
 
-            $response['loan'] = new LoanRepaymentResource($loanRepayment);
-            return $this->sendResponse($response, 'Customer loan repayment successfull');
+            // If All loan repayments are PAID, then Loan payment_status update to PAID
+            if (!$loan->getRemainLoanRepayment->count()) {
+                $loan->payment_status = "PAID";
+                $loan->save();
+            }
+            return $this->sendResponse($response, "Customer loan repayment successfull");
         }
     }
 }
