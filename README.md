@@ -1,5 +1,5 @@
 1. Clone the project
-2. Rrun `composer install`
+2. Run `composer install`
 3. Make .env file a copy of .env.example
 4. Run `php artisan migrate`
 5. Run `php artisan db:seed` to create admin user
