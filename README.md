@@ -4,6 +4,11 @@
 4. Run `php artisan migrate`
 5. Run `php artisan db:seed` to create admin user
 6. Run `php artisan passport:install` 
+6. Run `php artisan telescope:install` 
+4. Run `php artisan migrate`
+7. Run `php artisan serve`
+
+Telescop Viewer - http://127.0.0.1:8000/telescope/requests
 
 Admin user credentials
 email:surajitsil2908@gmail.com

@@ -10,6 +10,7 @@
         "laravel/framework": "^9.19",
         "laravel/passport": "^11.3",
         "laravel/sanctum": "^3.0",
+        "laravel/telescope": "^4.10",
         "laravel/tinker": "^2.7",
         "symfony/psr-http-message-bridge": "^2.1"
     },
